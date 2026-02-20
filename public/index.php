@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+session_start(); // ✅ necesario para repos "memory" persistentes
+
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 $config = require dirname(__DIR__) . '/config/config.php';

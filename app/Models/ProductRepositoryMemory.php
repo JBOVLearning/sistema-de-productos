@@ -5,15 +5,19 @@ namespace App\Models;
 
 final class ProductRepositoryMemory implements ProductRepository
 {
-    /** @var array<int, array{id:int,category_id:int,name:string,price:string,category_name?:string}> */
-    private array $items = [
-        ['id' => 1, 'category_id' => 1, 'name' => 'Inca Kola', 'price' => '3.50'],
-        ['id' => 2, 'category_id' => 2, 'name' => 'Leche Gloria', 'price' => '4.20'],
-    ];
+    private const KEY_ITEMS = 'mem.products.items';
+    private const KEY_NEXT  = 'mem.products.nextId';
 
-    private int $nextId = 3;
-
-    public function __construct(private CategoryRepository $categories) {}
+    public function __construct(private CategoryRepository $categories)
+    {
+        if (!isset($_SESSION[self::KEY_ITEMS], $_SESSION[self::KEY_NEXT])) {
+            $_SESSION[self::KEY_ITEMS] = [
+                ['id' => 1, 'category_id' => 1, 'name' => 'Inca Kola', 'price' => '3.50'],
+                ['id' => 2, 'category_id' => 2, 'name' => 'Leche Gloria', 'price' => '4.20'],
+            ];
+            $_SESSION[self::KEY_NEXT] = 3;
+        }
+    }
 
     public function all(): array
     {
@@ -23,7 +27,7 @@ final class ProductRepositoryMemory implements ProductRepository
         }
 
         $out = [];
-        foreach ($this->items as $p) {
+        foreach ($_SESSION[self::KEY_ITEMS] as $p) {
             $p['category_name'] = $cats[(int)$p['category_id']] ?? '---';
             $out[] = $p;
         }
@@ -32,7 +36,7 @@ final class ProductRepositoryMemory implements ProductRepository
 
     public function find(int $id): ?array
     {
-        foreach ($this->items as $it) {
+        foreach ($_SESSION[self::KEY_ITEMS] as $it) {
             if ((int)$it['id'] === $id) return $it;
         }
         return null;
@@ -47,8 +51,10 @@ final class ProductRepositoryMemory implements ProductRepository
         if ($categoryId <= 0) throw new \InvalidArgumentException('category_id requerido');
         if ($name === '') throw new \InvalidArgumentException('name requerido');
 
-        $id = $this->nextId++;
-        $this->items[] = [
+        $id = (int)$_SESSION[self::KEY_NEXT];
+        $_SESSION[self::KEY_NEXT] = $id + 1;
+
+        $_SESSION[self::KEY_ITEMS][] = [
             'id' => $id,
             'category_id' => $categoryId,
             'name' => $name,
@@ -66,9 +72,9 @@ final class ProductRepositoryMemory implements ProductRepository
         if ($categoryId <= 0) throw new \InvalidArgumentException('category_id requerido');
         if ($name === '') throw new \InvalidArgumentException('name requerido');
 
-        foreach ($this->items as $i => $it) {
+        foreach ($_SESSION[self::KEY_ITEMS] as $i => $it) {
             if ((int)$it['id'] === $id) {
-                $this->items[$i] = [
+                $_SESSION[self::KEY_ITEMS][$i] = [
                     'id' => $id,
                     'category_id' => $categoryId,
                     'name' => $name,
@@ -81,9 +87,10 @@ final class ProductRepositoryMemory implements ProductRepository
 
     public function delete(int $id): void
     {
-        foreach ($this->items as $i => $it) {
+        foreach ($_SESSION[self::KEY_ITEMS] as $i => $it) {
             if ((int)$it['id'] === $id) {
-                unset($this->items[$i]);
+                unset($_SESSION[self::KEY_ITEMS][$i]);
+                $_SESSION[self::KEY_ITEMS] = array_values($_SESSION[self::KEY_ITEMS]);
                 return;
             }
         }

@@ -5,22 +5,28 @@ namespace App\Models;
 
 final class CategoryRepositoryMemory implements CategoryRepository
 {
-    /** @var array<int, array{id:int,name:string}> */
-    private array $items = [
-        ['id' => 1, 'name' => 'Bebidas'],
-        ['id' => 2, 'name' => 'Lácteos'],
-    ];
+    private const KEY_ITEMS = 'mem.categories.items';
+    private const KEY_NEXT  = 'mem.categories.nextId';
 
-    private int $nextId = 3;
+    public function __construct()
+    {
+        if (!isset($_SESSION[self::KEY_ITEMS], $_SESSION[self::KEY_NEXT])) {
+            $_SESSION[self::KEY_ITEMS] = [
+                ['id' => 1, 'name' => 'Bebidas'],
+                ['id' => 2, 'name' => 'Lácteos'],
+            ];
+            $_SESSION[self::KEY_NEXT] = 3;
+        }
+    }
 
     public function all(): array
     {
-        return array_values($this->items);
+        return array_values($_SESSION[self::KEY_ITEMS]);
     }
 
     public function find(int $id): ?array
     {
-        foreach ($this->items as $it) {
+        foreach ($_SESSION[self::KEY_ITEMS] as $it) {
             if ((int)$it['id'] === $id) return $it;
         }
         return null;
@@ -31,8 +37,10 @@ final class CategoryRepositoryMemory implements CategoryRepository
         $name = trim((string)($data['name'] ?? ''));
         if ($name === '') throw new \InvalidArgumentException('name requerido');
 
-        $id = $this->nextId++;
-        $this->items[] = ['id' => $id, 'name' => $name];
+        $id = (int)$_SESSION[self::KEY_NEXT];
+        $_SESSION[self::KEY_NEXT] = $id + 1;
+
+        $_SESSION[self::KEY_ITEMS][] = ['id' => $id, 'name' => $name];
         return $id;
     }
 
@@ -41,9 +49,9 @@ final class CategoryRepositoryMemory implements CategoryRepository
         $name = trim((string)($data['name'] ?? ''));
         if ($name === '') throw new \InvalidArgumentException('name requerido');
 
-        foreach ($this->items as $i => $it) {
+        foreach ($_SESSION[self::KEY_ITEMS] as $i => $it) {
             if ((int)$it['id'] === $id) {
-                $this->items[$i] = ['id' => $id, 'name' => $name];
+                $_SESSION[self::KEY_ITEMS][$i]['name'] = $name;
                 return;
             }
         }
@@ -51,9 +59,10 @@ final class CategoryRepositoryMemory implements CategoryRepository
 
     public function delete(int $id): void
     {
-        foreach ($this->items as $i => $it) {
+        foreach ($_SESSION[self::KEY_ITEMS] as $i => $it) {
             if ((int)$it['id'] === $id) {
-                unset($this->items[$i]);
+                unset($_SESSION[self::KEY_ITEMS][$i]);
+                $_SESSION[self::KEY_ITEMS] = array_values($_SESSION[self::KEY_ITEMS]);
                 return;
             }
         }
