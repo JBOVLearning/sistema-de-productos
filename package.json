@@ -1,0 +1,13 @@
+{
+    "name": "sistema-de-productos",
+    "private": true,
+    "devDependencies": {
+      "tailwindcss": "^3.4.10",
+      "postcss": "^8.4.47",
+      "autoprefixer": "^10.4.20"
+    },
+    "scripts": {
+      "dev": "tailwindcss -i ./resources/app.css -o ./public/assets/app.css --watch",
+      "build": "tailwindcss -i ./resources/app.css -o ./public/assets/app.css --minify"
+    }
+  }
