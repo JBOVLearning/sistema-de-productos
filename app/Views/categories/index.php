@@ -8,6 +8,53 @@
        href="<?= htmlspecialchars($basePath) ?>/categories/create">Nueva</a>
   </div>
 
+  <?php
+    // ====== DATA PARA GRAFICO (conteo de productos por categoría) ======
+    // Espera que el controller pase $products (lista completa) además de $categories.
+    $catLabels = [];
+    $catCounts = [];
+
+    $catNameById = [];
+    foreach (($categories ?? []) as $c) {
+      $id = (int)($c['id'] ?? 0);
+      $name = (string)($c['name'] ?? '');
+      $catNameById[$id] = $name;
+      $catLabels[] = $name;
+      $catCounts[$id] = 0;
+    }
+
+    foreach (($products ?? []) as $p) {
+      $cid = (int)($p['category_id'] ?? 0);
+      if (!isset($catCounts[$cid])) {
+        // categoría no existente (data sucia) => crea bucket
+        $catCounts[$cid] = 0;
+        $catLabels[] = $catNameById[$cid] ?? ('#' . $cid);
+      }
+      $catCounts[$cid]++;
+    }
+
+    // Alinea counts al orden de labels originales (por id en categories)
+    $values = [];
+    foreach (($categories ?? []) as $c) {
+      $id = (int)($c['id'] ?? 0);
+      $values[] = (int)($catCounts[$id] ?? 0);
+    }
+
+    // Si hay buckets extra por data sucia, no los incluimos (mantener simple)
+    $chartLabelsJson = json_encode($catLabels, JSON_UNESCAPED_UNICODE);
+    $chartValuesJson = json_encode($values, JSON_UNESCAPED_UNICODE);
+  ?>
+
+  <!-- ====== GRAFICO ====== -->
+  <div class="rounded-xl border border-slate-800 bg-slate-900/30 p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold">Productos por categoría</h2>
+      <span class="text-xs text-slate-400">(conteo)</span>
+    </div>
+    <canvas id="chartCatProducts" height="120"></canvas>
+  </div>
+
+  <!-- ====== TABLA ====== -->
   <div class="rounded-xl border border-slate-800 overflow-hidden">
     <table class="w-full text-sm">
       <thead class="bg-slate-900/60 text-slate-300">
@@ -44,3 +91,33 @@
     </table>
   </div>
 </section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(() => {
+  const labels = <?= $chartLabelsJson ?: '[]' ?>;
+  const values = <?= $chartValuesJson ?: '[]' ?>;
+
+  const el = document.getElementById('chartCatProducts');
+  if (!el) return;
+
+  new Chart(el, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Productos',
+        data: values,
+        backgroundColor: 'rgba(99, 102, 241, 0.55)',
+        borderColor: 'rgba(99, 102, 241, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+})();
+</script>

@@ -25,11 +25,16 @@ final class CategoriesController
     public function index(): Response
     {
         [, $repos] = $this->repos();
-        /** @var CategoryRepository $cats */
+
+        /** @var \App\Models\CategoryRepository $cats */
         $cats = $repos['categories'];
+
+        /** @var \App\Models\ProductRepository $prods */
+        $prods = $repos['products'];
 
         return Response::html(View::page('categories/index', [
             'categories' => $cats->all(),
+            'products' => $prods->all(), // ✅ para el gráfico
         ]));
     }
 
@@ -46,7 +51,7 @@ final class CategoriesController
         /** @var CategoryRepository $cats */
         $cats = $repos['categories'];
 
-        $name = trim((string)($_POST['name'] ?? ''));
+        $name = trim((string) ($_POST['name'] ?? ''));
         if ($name === '') {
             return Response::html(View::page('categories/create', [
                 'error' => 'Nombre requerido',
@@ -64,7 +69,7 @@ final class CategoriesController
         /** @var CategoryRepository $cats */
         $cats = $repos['categories'];
 
-        $id = (int)($_GET['id'] ?? 0);
+        $id = (int) ($_GET['id'] ?? 0);
         $category = $cats->find($id);
 
         if (!$category) {
@@ -84,8 +89,8 @@ final class CategoriesController
         /** @var CategoryRepository $cats */
         $cats = $repos['categories'];
 
-        $id = (int)($_POST['id'] ?? 0);
-        $name = trim((string)($_POST['name'] ?? ''));
+        $id = (int) ($_POST['id'] ?? 0);
+        $name = trim((string) ($_POST['name'] ?? ''));
 
         if ($id <= 0 || $name === '') {
             return Response::html("422<br>Datos inválidos", 422);
@@ -104,7 +109,7 @@ final class CategoriesController
         /** @var CategoryRepository $cats */
         $cats = $repos['categories'];
 
-        $id = (int)($_POST['id'] ?? 0);
+        $id = (int) ($_POST['id'] ?? 0);
         if ($id > 0) {
             $cats->delete($id);
         }

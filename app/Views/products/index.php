@@ -8,6 +8,34 @@
        href="<?= htmlspecialchars($basePath) ?>/products/create">Nuevo</a>
   </div>
 
+  <?php
+    // ====== DATA PARA GRAFICO (top 10 por precio) ======
+    $items = [];
+    foreach (($products ?? []) as $p) {
+      $name  = (string)($p['name'] ?? '');
+      $price = (float) str_replace(',', '.', (string)($p['price'] ?? '0'));
+      $items[] = ['name' => $name, 'price' => $price];
+    }
+    usort($items, fn($a, $b) => $b['price'] <=> $a['price']);
+    $items = array_slice($items, 0, 10);
+
+    $labels = array_map(fn($x) => $x['name'], $items);
+    $values = array_map(fn($x) => $x['price'], $items);
+
+    $chartLabelsJson = json_encode($labels, JSON_UNESCAPED_UNICODE);
+    $chartValuesJson = json_encode($values, JSON_UNESCAPED_UNICODE);
+  ?>
+
+  <!-- ====== GRAFICO ====== -->
+  <div class="rounded-xl border border-slate-800 bg-slate-900/30 p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold">Top 10 productos por precio</h2>
+      <span class="text-xs text-slate-400">(según campo price)</span>
+    </div>
+    <canvas id="chartTopPrice" height="120"></canvas>
+  </div>
+
+  <!-- ====== TABLA ====== -->
   <div class="rounded-xl border border-slate-800 overflow-hidden">
     <table class="w-full text-sm">
       <thead class="bg-slate-900/60 text-slate-300">
@@ -48,3 +76,33 @@
     </table>
   </div>
 </section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(() => {
+  const labels = <?= $chartLabelsJson ?: '[]' ?>;
+  const values = <?= $chartValuesJson ?: '[]' ?>;
+
+  const el = document.getElementById('chartTopPrice');
+  if (!el) return;
+
+  new Chart(el, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Precio',
+        data: values,
+        backgroundColor: 'rgba(16, 185, 129, 0.55)',
+        borderColor: 'rgba(16, 185, 129, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+})();
+</script>
